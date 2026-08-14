@@ -1,0 +1,1071 @@
+<!DOCTYPE html>
+
+<html lang="id">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>WebSocket Chat</title>
+
+    <style>
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+
+            margin: 0;
+
+            font-family:
+                Arial,
+                sans-serif;
+
+            background: #f3f4f6;
+
+        }
+
+        /* =========================
+           LOGIN
+        ========================= */
+
+        .login {
+
+            width: 400px;
+
+            max-width: 90%;
+
+            margin: 120px auto;
+
+            padding: 30px;
+
+            background: white;
+
+            border-radius: 12px;
+
+            box-shadow:
+                0 5px 20px
+                rgba(0,0,0,.1);
+
+        }
+
+        .login h2 {
+
+            text-align: center;
+
+        }
+
+        .login input {
+
+            width: 100%;
+
+            padding: 12px;
+
+            margin-bottom: 15px;
+
+            border:
+                1px solid #ddd;
+
+            border-radius: 8px;
+
+        }
+
+        button {
+
+            border: none;
+
+            cursor: pointer;
+
+        }
+
+        .login button {
+
+            width: 100%;
+
+            padding: 12px;
+
+            color: white;
+
+            background: #2563eb;
+
+            border-radius: 8px;
+
+        }
+
+        /* =========================
+           CHAT
+        ========================= */
+
+        .container {
+
+            width: 1000px;
+
+            max-width: 95%;
+
+            height: 650px;
+
+            margin: 30px auto;
+
+            display: flex;
+
+            background: white;
+
+            border-radius: 12px;
+
+            overflow: hidden;
+
+            box-shadow:
+                0 5px 20px
+                rgba(0,0,0,.1);
+
+        }
+
+        /* =========================
+           SIDEBAR
+        ========================= */
+
+        .sidebar {
+
+            width: 240px;
+
+            background: #111827;
+
+            color: white;
+
+            padding: 20px;
+
+        }
+
+        .sidebar h3 {
+
+            margin-top: 0;
+
+        }
+
+        .user {
+
+            padding: 12px;
+
+            margin-bottom: 8px;
+
+            background: #1f2937;
+
+            border-radius: 8px;
+
+            cursor: pointer;
+
+        }
+
+        .user:hover {
+
+            background: #374151;
+
+        }
+
+        /* =========================
+           CHAT
+        ========================= */
+
+        .chat {
+
+            flex: 1;
+
+            display: flex;
+
+            flex-direction: column;
+
+        }
+
+        .header {
+
+            height: 60px;
+
+            display: flex;
+
+            align-items: center;
+
+            padding: 0 20px;
+
+            border-bottom:
+                1px solid #ddd;
+
+            font-weight: bold;
+
+        }
+
+        .messages {
+
+            flex: 1;
+
+            padding: 20px;
+
+            overflow-y: auto;
+
+            background: #f9fafb;
+
+        }
+
+        .message {
+
+            margin-bottom: 15px;
+
+        }
+
+        .message.me {
+
+            text-align: right;
+
+        }
+
+        .message .username {
+
+            font-size: 12px;
+
+            color: #666;
+
+            margin-bottom: 4px;
+
+        }
+
+        .message .text {
+
+            display: inline-block;
+
+            max-width: 70%;
+
+            padding: 10px 15px;
+
+            background: white;
+
+            border-radius: 10px;
+
+            box-shadow:
+                0 1px 3px
+                rgba(0,0,0,.1);
+
+        }
+
+        .message.me .text {
+
+            background: #2563eb;
+
+            color: white;
+
+        }
+
+        .system {
+
+            text-align: center;
+
+            color: #888;
+
+            font-size: 12px;
+
+            margin: 10px;
+
+        }
+
+        .typing {
+
+            height: 25px;
+
+            padding-left: 20px;
+
+            font-size: 12px;
+
+            color: #777;
+
+        }
+
+        /* =========================
+           INPUT
+        ========================= */
+
+        .input-area {
+
+            display: flex;
+
+            padding: 15px;
+
+            border-top:
+                1px solid #ddd;
+
+        }
+
+        .input-area input {
+
+            flex: 1;
+
+            padding: 12px;
+
+            border:
+                1px solid #ddd;
+
+            border-radius: 8px;
+
+            outline: none;
+
+        }
+
+        .input-area button {
+
+            margin-left: 10px;
+
+            padding:
+                0 20px;
+
+            color: white;
+
+            background: #2563eb;
+
+            border-radius: 8px;
+
+        }
+
+    </style>
+
+</head>
+
+
+<body>
+
+
+<!-- ===================================
+     LOGIN
+=================================== -->
+
+<div
+    id="loginPage"
+    class="login"
+>
+
+    <h2>💬 WebSocket Chat</h2>
+
+    <input
+        id="userId"
+        placeholder="User ID"
+        value="1"
+    >
+
+    <input
+        id="username"
+        placeholder="Username"
+    >
+
+    <button onclick="login()">
+
+        Login
+
+    </button>
+
+</div>
+
+
+<!-- ===================================
+     CHAT
+=================================== -->
+
+<div
+    id="chatPage"
+    class="container"
+    style="display:none;"
+>
+
+
+    <!-- SIDEBAR -->
+
+    <div class="sidebar">
+
+        <h3>Online Users</h3>
+
+        <div id="users"></div>
+
+    </div>
+
+
+    <!-- CHAT -->
+
+    <div class="chat">
+
+
+        <div class="header">
+
+            <span id="chatTitle">
+
+                💬 Chat
+
+            </span>
+
+        </div>
+
+
+        <div
+            id="messages"
+            class="messages"
+        ></div>
+
+
+        <div
+            id="typing"
+            class="typing"
+        ></div>
+
+
+        <div class="input-area">
+
+            <input
+                id="messageInput"
+                placeholder="Ketik pesan..."
+                oninput="typing()"
+                onkeydown="handleEnter(event)"
+            >
+
+            <button
+                onclick="sendMessage()"
+            >
+
+                Kirim
+
+            </button>
+
+        </div>
+
+
+    </div>
+
+</div>
+
+
+<script>
+
+    let socket;
+
+    let myUserId;
+
+    let myUsername;
+
+    let selectedUserId = null;
+
+    let selectedUsername = null;
+
+    let typingTimeout;
+
+
+    // =====================================
+    // LOGIN
+    // =====================================
+
+   function login() {
+
+        myUserId = String(
+            document
+                .getElementById("userId")
+                .value
+                .trim()
+        );
+
+        myUsername =
+            document
+                .getElementById("username")
+                .value
+                .trim();
+
+        if (!myUserId || !myUsername) {
+
+            alert(
+                "User ID dan username wajib diisi"
+            );
+
+            return;
+        }
+
+        console.log("Login:", {
+            userId: myUserId,
+            username: myUsername
+        });
+
+        socket =
+            new WebSocket(
+                "ws://" + window.location.host
+            );
+
+        socket.onopen = function() {
+
+            console.log("WebSocket connected");
+
+            socket.send(
+                JSON.stringify({
+                    type: "login",
+                    userId: myUserId,
+                    username: myUsername
+                })
+            );
+
+            document.getElementById(
+                "loginPage"
+            ).style.display = "none";
+
+            document.getElementById(
+                "chatPage"
+            ).style.display = "flex";
+        };
+
+        socket.onmessage = function(event) {
+
+            const data =
+                JSON.parse(event.data);
+
+            console.log(
+                "Received from server:",
+                data
+            );
+
+            switch (data.type) {
+
+                case "login_success":
+
+                    console.log(
+                        "Login success:",
+                        data
+                    );
+
+                    break;
+
+                case "users":
+
+                    updateUsers(
+                        data.users
+                    );
+
+                    break;
+
+                case "system":
+
+                    addSystemMessage(
+                        data.message
+                    );
+
+                    break;
+
+                case "private_message":
+
+                    receivePrivateMessage(
+                        data
+                    );
+
+                    break;
+
+                case "typing":
+
+                    showTyping(
+                        data
+                    );
+
+                    break;
+
+                case "message_read":
+
+                    console.log(
+                        "Message read:",
+                        data
+                    );
+
+                    break;
+
+                case "error":
+
+                    console.error(
+                        data.message
+                    );
+
+                    break;
+            }
+
+        };
+
+        socket.onclose = function() {
+
+            console.log(
+                "WebSocket disconnected"
+            );
+
+        };
+
+        socket.onerror = function(error) {
+
+            console.error(
+                "WebSocket error:",
+                error
+            );
+
+        };
+    }
+    // =====================================
+    // USERS
+    // =====================================
+
+    function updateUsers(users) {
+
+        console.log("ONLINE USERS:", users);
+        console.log("MY USER ID:", myUserId);
+
+        const container =
+            document.getElementById("users");
+
+        container.innerHTML = "";
+
+        if (!users || users.length === 0) {
+
+            container.innerHTML = `
+                <div style="
+                    color: #aaa;
+                    padding: 10px 0;
+                ">
+                    Tidak ada user online
+                </div>
+            `;
+
+            return;
+        }
+
+        users.forEach(function(user) {
+
+            const userId = String(user.userId);
+
+            // Jangan tampilkan diri sendiri
+            if (userId === String(myUserId)) {
+                return;
+            }
+
+            const div =
+                document.createElement("div");
+
+            div.className = "user";
+
+            div.innerHTML = `
+                🟢 ${escapeHtml(user.username)}
+            `;
+
+            div.onclick = function() {
+
+                selectUser({
+                    userId: userId,
+                    username: user.username
+                });
+
+            };
+
+            container.appendChild(div);
+
+        });
+
+    }
+
+
+    // =====================================
+    // SELECT USER
+    // =====================================
+
+    function selectUser(user) {
+
+        selectedUserId =
+            user.userId;
+
+        selectedUsername =
+            user.username;
+
+
+        document
+            .getElementById(
+                "chatTitle"
+            )
+            .innerText =
+            "💬 " +
+            user.username;
+
+
+        document
+            .getElementById(
+                "messages"
+            )
+            .innerHTML = "";
+
+
+        addSystemMessage(
+            `Chat dengan ${user.username}`
+        );
+
+    }
+
+
+    // =====================================
+    // SEND PRIVATE MESSAGE
+    // =====================================
+
+    function sendMessage() {
+
+        const input =
+            document.getElementById(
+                "messageInput"
+            );
+
+
+        const message =
+            input.value.trim();
+
+
+        if (!message) {
+            return;
+        }
+
+
+        if (!selectedUserId) {
+
+            alert(
+                "Pilih user terlebih dahulu"
+            );
+
+            return;
+
+        }
+
+
+        socket.send(
+            JSON.stringify({
+
+                type:
+                    "private_message",
+
+                toUserId:
+                    selectedUserId,
+
+                message:
+                    message
+
+            })
+        );
+
+
+        input.value = "";
+
+    }
+
+
+    // =====================================
+    // RECEIVE PRIVATE MESSAGE
+    // =====================================
+
+    function receivePrivateMessage(
+        data
+    ) {
+
+        const isMe =
+            data.fromUserId ===
+            myUserId;
+
+
+        // Jika bukan chat yang sedang dibuka
+        if (
+            !isMe &&
+            data.fromUserId !==
+            selectedUserId
+        ) {
+
+            console.log(
+                "Pesan dari user lain:",
+                data
+            );
+
+            return;
+
+        }
+
+
+        if (
+            isMe &&
+            data.toUserId !==
+            selectedUserId
+        ) {
+
+            return;
+
+        }
+
+
+        addChatMessage(
+            data.fromUsername,
+            data.message,
+            isMe
+        );
+
+
+        // Kirim read
+        if (!isMe) {
+
+            socket.send(
+                JSON.stringify({
+
+                    type:
+                        "read_message",
+
+                    messageId:
+                        data.messageId,
+
+                    fromUserId:
+                        data.fromUserId
+
+                })
+            );
+
+        }
+
+    }
+
+
+    // =====================================
+    // TYPING
+    // =====================================
+
+    function typing() {
+
+        if (!selectedUserId) {
+            return;
+        }
+
+
+        socket.send(
+            JSON.stringify({
+
+                type:
+                    "typing",
+
+                toUserId:
+                    selectedUserId,
+
+                isTyping:
+                    true
+
+            })
+        );
+
+
+        clearTimeout(
+            typingTimeout
+        );
+
+
+        typingTimeout =
+            setTimeout(
+                function() {
+
+                    socket.send(
+                        JSON.stringify({
+
+                            type:
+                                "typing",
+
+                            toUserId:
+                                selectedUserId,
+
+                            isTyping:
+                                false
+
+                        })
+                    );
+
+                },
+                1000
+            );
+
+    }
+
+
+    // =====================================
+    // SHOW TYPING
+    // =====================================
+
+    function showTyping(data) {
+
+        const typingElement =
+            document.getElementById(
+                "typing"
+            );
+
+
+        if (
+            data.isTyping
+        ) {
+
+            typingElement.innerText =
+                data.username +
+                " sedang mengetik...";
+
+        } else {
+
+            typingElement.innerText =
+                "";
+
+        }
+
+    }
+
+
+    // =====================================
+    // ADD MESSAGE
+    // =====================================
+
+    function addChatMessage(
+        username,
+        message,
+        isMe
+    ) {
+
+        const container =
+            document.getElementById(
+                "messages"
+            );
+
+
+        const div =
+            document.createElement(
+                "div"
+            );
+
+
+        div.className =
+            "message" +
+            (
+                isMe
+                    ? " me"
+                    : ""
+            );
+
+
+        div.innerHTML = `
+
+            <div class="username">
+                ${escapeHtml(username)}
+            </div>
+
+            <div class="text">
+                ${escapeHtml(message)}
+            </div>
+
+        `;
+
+
+        container.appendChild(
+            div
+        );
+
+
+        scrollMessages();
+
+    }
+
+
+    // =====================================
+    // SYSTEM MESSAGE
+    // =====================================
+
+    function addSystemMessage(
+        message
+    ) {
+
+        const container =
+            document.getElementById(
+                "messages"
+            );
+
+
+        const div =
+            document.createElement(
+                "div"
+            );
+
+
+        div.className =
+            "system";
+
+
+        div.innerText =
+            message;
+
+
+        container.appendChild(
+            div
+        );
+
+
+        scrollMessages();
+
+    }
+
+
+    // =====================================
+    // ENTER
+    // =====================================
+
+    function handleEnter(
+        event
+    ) {
+
+        if (
+            event.key ===
+            "Enter"
+        ) {
+
+            sendMessage();
+
+        }
+
+    }
+
+
+    // =====================================
+    // SCROLL
+    // =====================================
+
+    function scrollMessages() {
+
+        const container =
+            document.getElementById(
+                "messages"
+            );
+
+
+        container.scrollTop =
+            container.scrollHeight;
+
+    }
+
+
+    // =====================================
+    // ESCAPE HTML
+    // =====================================
+
+    function escapeHtml(text) {
+
+        const div =
+            document.createElement(
+                "div"
+            );
+
+        div.textContent =
+            text;
+
+        return div.innerHTML;
+
+    }
+
+</script>
+
+</body>
+
+</html>

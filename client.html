@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>WebSocket Client</title>
+</head>
+<body>
+
+<h2>WebSocket Test</h2>
+
+<input
+    type="text"
+    id="message"
+    placeholder="Masukkan pesan"
+/>
+
+<button onclick="sendMessage()">
+    Kirim
+</button>
+
+<pre id="output"></pre>
+
+<script>
+
+const output = document.getElementById('output');
+
+const socket = new WebSocket('ws://localhost:8080');
+
+socket.onopen = () => {
+    addMessage('Connected to WebSocket Server');
+};
+
+socket.onmessage = (event) => {
+    console.log('Server:', event.data);
+
+    addMessage('Server: ' + event.data);
+};
+
+socket.onclose = () => {
+    addMessage('Disconnected');
+};
+
+socket.onerror = (error) => {
+    console.error(error);
+
+    addMessage('WebSocket Error');
+};
+
+function sendMessage() {
+
+    const input = document.getElementById('message');
+
+    const data = {
+        type: 'message',
+        message: input.value,
+        timestamp: new Date().toISOString(),
+    };
+
+    socket.send(JSON.stringify(data));
+
+    addMessage('You: ' + JSON.stringify(data));
+
+    input.value = '';
+}
+
+function addMessage(message) {
+
+    output.textContent += message + '\n';
+
+}
+
+</script>
+
+</body>
+</html>
